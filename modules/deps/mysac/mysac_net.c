@@ -4,15 +4,15 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -183,7 +183,7 @@ int mysac_socket_connect(const char *socket_name, int *fd) {
 int mysac_socket_connect_check(int fd) {
 	int ret;
 	int code;
-	size_t len = sizeof(int);
+	socklen_t len = sizeof(int);
 
 	ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &code, &len);
 	if (ret != 0) {

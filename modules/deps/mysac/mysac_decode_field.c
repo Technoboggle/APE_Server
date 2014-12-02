@@ -4,15 +4,15 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -74,7 +74,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 	if (tmp_len == -1)
 		return -MYERR_BAD_LCB;
 	i += tmp_len;
-	if (i + size > len)
+	if (i + size > (unsigned int)len)
 		return -MYERR_LEN_OVER_BUFFER;
 	col->catalog_length = size;
 	memmove(wh, &buf[i], size);
@@ -88,7 +88,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 	if (tmp_len == -1)
 		return -MYERR_BAD_LCB;
 	i += tmp_len;
-	if (i + size > len)
+	if (i + size > (unsigned int)len)
 		return -MYERR_LEN_OVER_BUFFER;
 	col->db_length = size;
 	memmove(wh, &buf[i], size);
@@ -102,7 +102,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 	if (tmp_len == -1)
 		return -MYERR_BAD_LCB;
 	i += tmp_len;
-	if (i + size > len)
+	if (i + size > (unsigned int)len)
 		return -MYERR_LEN_OVER_BUFFER;
 	col->table_length = size;
 	memmove(wh, &buf[i], size);
@@ -116,7 +116,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 	if (tmp_len == -1)
 		return -MYERR_BAD_LCB;
 	i += tmp_len;
-	if (i + size > len)
+	if (i + size > (unsigned int)len)
 		return -MYERR_LEN_OVER_BUFFER;
 	col->org_table_length = size;
 	memmove(wh, &buf[i], size);
@@ -130,7 +130,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 	if (tmp_len == -1)
 		return -MYERR_BAD_LCB;
 	i += tmp_len;
-	if (i + size > len)
+	if (i + size > (unsigned int)len)
 		return -MYERR_LEN_OVER_BUFFER;
 	col->name_length = size;
 	memmove(wh, &buf[i], size);
@@ -144,7 +144,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 	if (tmp_len == -1)
 		return -MYERR_BAD_LCB;
 	i += tmp_len;
-	if (i + size > len)
+	if (i + size > (unsigned int)len)
 		return -MYERR_LEN_OVER_BUFFER;
 	col->org_name_length = size;
 	memmove(wh, &buf[i], size);
@@ -189,7 +189,7 @@ int mysac_decode_field(char *buf, int len, MYSQL_FIELD *col) {
 		if (tmp_len == -1)
 			return -MYERR_BAD_LCB;
 		i += tmp_len;
-		if (i + size > len)
+		if (i + size > (unsigned int)len)
 			return -MYERR_LEN_OVER_BUFFER;
 		col->def_length = size;
 		memmove(wh, &buf[i], size);

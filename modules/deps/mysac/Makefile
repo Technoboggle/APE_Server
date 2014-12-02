@@ -15,10 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+SHELL=/bin/bash
 # Mysql lib directory
 # exemple: <path>/mysql-5.1.41/libmysql_r/.libs
-MYSQL_LIB := /usr/lib
+# For Fedora type builds including Centos use the following line
+MYSQL_LIB := /usr/lib64/mysql
+# For Debian / Ubuntu type builds use:
+#MYSQL_LIB := /usr/lib
 
 # Mysql include directory
 # exemple: <path>/mysql-5.1.41/include
@@ -28,7 +31,9 @@ MYSQL_INC := /usr/include/mysql
 # and use "VERSION" file if unknown.
 BUILDVER := $(shell ./mysac_ver)
 
-CFLAGS = -DBUILDVER=$(BUILDVER) -I$(MYSQL_INC) -O0 -g -Wall -fPIC
+# Dissabled -Werror flag to silence strict fails.
+CFLAGS = -DBUILDVER=$(BUILDVER) -I$(MYSQL_INC) -O0 -g -Wall -fpic
+#CFLAGS = -DBUILDVER=$(BUILDVER) -I$(MYSQL_INC) -O0 -g -Wall -Werror -fpic
 LDFLAGS = -g -L$(MYSQL_LIB) -lmysqlclient_r
 
 OBJS = mysac.o mysac_net.o mysac_decode_field.o mysac_decode_row.o mysac_encode_values.o mysac_errors.o
@@ -41,17 +46,18 @@ pack:
 	git clone . /tmp/mysac-$(BUILDVER) && \
 	echo "$(BUILDVER)" > VERSION; \
 	cp VERSION /tmp/mysac-$(BUILDVER); \
+	rm /tmp/mysac-$(BUILDVER)/.gitignore >/dev/null 2>&1; \
 	tar --exclude .git -C /tmp/ -vzcf mysac-$(BUILDVER).tar.gz mysac-$(BUILDVER) && \
 	rm -rf /tmp/mysac-$(BUILDVER) >/dev/null 2>&1; \
 
-lib: libmysac.a
+lib: libmysac-static.a libmysac.so exemple
 #libmysac.so
 
-libmysac.so: libmysac.a
-	$(LD) -o libmysac.so -shared -soname libmysac.so.0.0 libmysac.a
+libmysac.so: $(OBJS)
+	$(LD) -o libmysac.so -shared -soname libmysac.so.0.0 $(OBJS)
 
-libmysac.a: $(OBJS)
-	$(AR) -rcv libmysac.a $(OBJS)
+libmysac-static.a: $(OBJS)
+	$(AR) -rcv libmysac-static.a $(OBJS)
 
 make.deps: *.c *.h
 	for src in *.c; do \
@@ -59,11 +65,12 @@ make.deps: *.c *.h
 		echo "$${src//.c/.o}: $$src $$DEPS"; \
 	done > make.deps
 
-exemple: libmysac.a
+exemple: libmysac-static.a
 	$(MAKE) -C exemple CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)"
 
 clean:
-	rm -rf make.deps libmysac.so libmysac.a main.o man html $(OBJS)
+	$(MAKE) -C exemple clean
+	rm -rf make.deps libmysac.so libmysac-static.a main.o man html $(OBJS)
 
 doc:
 	doxygen mysac.doxygen
@@ -74,3 +81,5 @@ api:
 	doxygen mysac-api.doxygen
 
 include make.deps
+
+.PHONY: exemple

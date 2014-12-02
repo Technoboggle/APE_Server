@@ -4,21 +4,22 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* the order of theses headers and defines
  * is important */
 #include <mysql/my_global.h>
+#include <mysql/m_string.h> /* memcpy_fixed */
 //#undef _ISOC99_SOURCE
 //#define _ISOC99_SOURCE
 //#include <stdlib.h>
@@ -128,16 +129,14 @@ int mysac_encode_value(MYSAC_BIND *val, char *out, int len) {
 		if (len < 4)
 			return -1;
 		l = 4;
-		/* TODO: cast a revoir */
-		float4store((*(int *)val->value), out);
+		float4store((*(long *)val->value), out);
 		break;
 	
 	case MYSQL_TYPE_DOUBLE:
 		if (len < 8)
 			return -1;
 		l = 8;
-		/* TODO: cast a revoir */
-		float8store(*(int *)val->value, out);
+		float8store(*(long *)val->value, out);
 		break;
 	
 	/* libmysql/libmysql.c:3370

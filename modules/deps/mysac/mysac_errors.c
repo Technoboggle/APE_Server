@@ -4,15 +4,15 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -45,6 +45,7 @@ const char *mysac_errors[]  = {
 	[MYERR_CONVDOUBLE]       = "Error in string to double type conversion",
 	[MYERR_CONVTIME]         = "Error in time string to time conversion",
 	[MYERR_CONVTIMESTAMP]    = "Error in timestamp string to time conversion",
-	[MYERR_CONVDATE]         = "Error in date string to time conversion"
+	[MYERR_CONVDATE]         = "Error in date string to time conversion",
+	[MYERR_INVALID_EXPECT]   = "Unknown expect code"
 };
 

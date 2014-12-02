@@ -4,21 +4,22 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* the order of theses headers and defines
  * is important */
 #include <mysql/my_global.h>
+#include <mysql/m_string.h> /* memcpy_fixed */
 #undef _ISOC99_SOURCE
 #define _ISOC99_SOURCE
 #include <stdlib.h>
@@ -106,7 +107,7 @@ int mysac_decode_binary_row(char *buf, int packet_len,
 				if (tmp_len == -1)
 					return -1;
 				i += tmp_len;
-				if (i + len > packet_len)
+				if (i + len > (unsigned int)packet_len)
 					return -1;
 				if (nul == 1)
 					row->data[j].blob = NULL;
@@ -170,7 +171,7 @@ int mysac_decode_binary_row(char *buf, int packet_len,
 				if (tmp_len == -1)
 					return -1;
 				i += tmp_len;
-				if (i + len > packet_len)
+				if (i + len > (unsigned int)packet_len)
 					return -1;
 				if (nul == 1)
 					row->data[j].blob = NULL;
@@ -205,7 +206,7 @@ int mysac_decode_binary_row(char *buf, int packet_len,
 				if (tmp_len == -1)
 					return -1;
 				i += tmp_len;
-				if (i + len > packet_len)
+				if (i + len > (unsigned int)packet_len)
 					return -1;
 				if (nul == 1)
 					row->data[j].blob = NULL;
@@ -231,7 +232,7 @@ int mysac_decode_binary_row(char *buf, int packet_len,
 				if (tmp_len == -1)
 					return -1;
 				i += tmp_len;
-				if (i + len > packet_len)
+				if (i + len > (unsigned int)packet_len)
 					return -1;
 				if (nul == 1)
 					row->data[j].blob = NULL;
@@ -287,7 +288,7 @@ int mysac_decode_string_row(char *buf, int packet_len,
 
 		i += tmp_len;
 
-		if (i + len > packet_len)
+		if (i + len > (unsigned int)packet_len)
 			return -MYERR_LEN_OVER_BUFFER;
 
 		if (nul == 1) {
@@ -295,11 +296,161 @@ int mysac_decode_string_row(char *buf, int packet_len,
 			continue;
 		}
 
-		memmove(wh, &buf[i], len);
-		row->data[j].blob = wh;
-		row->data[j].blob[len] = '\0';
-		wh += len + 1;
-		row->lengths[j] = len;
+		/* convert string to specified type */
+		switch (res->cols[j].type) {
+
+		/* read null */
+		case MYSQL_TYPE_NULL:
+			row->data[j].blob = NULL;
+
+		/* read blob */
+		case MYSQL_TYPE_TINY_BLOB:
+		case MYSQL_TYPE_MEDIUM_BLOB:
+		case MYSQL_TYPE_LONG_BLOB:
+		case MYSQL_TYPE_BLOB:
+		/* decimal ? maybe for very big num ... crypto key ? */
+		case MYSQL_TYPE_DECIMAL:
+		case MYSQL_TYPE_NEWDECIMAL:
+		/* .... */
+		case MYSQL_TYPE_BIT:
+		/* read text */
+		case MYSQL_TYPE_STRING:
+		case MYSQL_TYPE_VAR_STRING:
+		case MYSQL_TYPE_VARCHAR:
+		/* read date */
+		case MYSQL_TYPE_NEWDATE:
+			memmove(wh, &buf[i], len);
+			row->data[j].blob = wh;
+			row->data[j].blob[len] = '\0';
+			wh += len + 1;
+			row->lengths[j] = len;
+			break;
+
+		case MYSQL_TYPE_TINY:
+		case MYSQL_TYPE_SHORT:
+		case MYSQL_TYPE_INT24:
+		case MYSQL_TYPE_LONG:
+			mem = buf[i+len];
+			buf[i+len] = '\0';
+			row->data[j].sint = strtol(&buf[i], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVLONG;
+			buf[i+len] = mem;
+			break;
+
+		case MYSQL_TYPE_LONGLONG:
+			mem = buf[i+len];
+			buf[i+len] = '\0';
+			row->data[j].sbigint = strtoll(&buf[i], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVLONG;
+			buf[i+len] = mem;
+			break;
+
+		case MYSQL_TYPE_FLOAT:
+			mem = buf[i+len];
+			buf[i+len] = '\0';
+			row->data[j].mfloat = strtof(&buf[i], &error);
+			if (*error != '\0')
+				return -MYERR_CONVFLOAT;
+			buf[i+len] = mem;
+			break;
+
+		case MYSQL_TYPE_DOUBLE:
+			mem = buf[i+len];
+			buf[i+len] = '\0';
+			row->data[j].mdouble = strtod(&buf[i], &error);
+			if (*error != '\0')
+				return -MYERR_CONVDOUBLE;
+			buf[i+len] = mem;
+			break;
+
+		case MYSQL_TYPE_TIME:
+			if (len != 8)
+				break;
+			mem = buf[i+8];
+			buf[i+2] = '\0';
+			buf[i+5] = '\0';
+			buf[i+8] = '\0';
+			row->data[j].tv.tv_usec = 0;
+			row->data[j].tv.tv_sec  = strtol(&buf[i], &error, 10) * 3600;
+			if (*error != '\0')
+				return -MYERR_CONVTIME;
+			row->data[j].tv.tv_sec += strtol(&buf[i+3], &error, 10) * 60;
+			if (*error != '\0')
+				return -MYERR_CONVTIME;
+			row->data[j].tv.tv_sec += strtol(&buf[i+6], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVTIME;
+			buf[i+8] = mem;
+			break;
+
+		case MYSQL_TYPE_YEAR:
+			if (len != 4)
+				break;
+			mem = buf[i+4];
+			buf[i+4] = '\0';
+			row->data[j].tm->tm_year = strtol(&buf[i], &error, 10) - 1900;
+			row->data[j].tm->tm_mday = 1;
+			buf[i+4] = mem;
+			break;
+
+		case MYSQL_TYPE_TIMESTAMP:
+		case MYSQL_TYPE_DATETIME:
+			if (len != 19)
+				break;
+			mem = buf[i+19];
+			buf[i+4]  = '\0';
+			buf[i+7]  = '\0';
+			buf[i+10] = '\0';
+			buf[i+13] = '\0';
+			buf[i+16] = '\0';
+			buf[i+19] = '\0';
+			row->data[j].tm->tm_year = strtol(&buf[i], &error, 10) - 1900;
+			if (*error != '\0')
+				return -MYERR_CONVTIMESTAMP;
+			row->data[j].tm->tm_mon  = strtol(&buf[i+5], &error, 10) - 1;
+			if (*error != '\0')
+				return -MYERR_CONVTIMESTAMP;
+			row->data[j].tm->tm_mday = strtol(&buf[i+8], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVTIMESTAMP;
+			row->data[j].tm->tm_hour = strtol(&buf[i+11], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVTIMESTAMP;
+			row->data[j].tm->tm_min  = strtol(&buf[i+14], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVTIMESTAMP;
+			row->data[j].tm->tm_sec  = strtol(&buf[i+17], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVTIMESTAMP;
+			buf[i+19] = mem;
+			break;
+
+		case MYSQL_TYPE_DATE:
+			if (len != 10)
+				break;
+			mem = buf[i+10];
+			buf[i+4]  = '\0';
+			buf[i+7]  = '\0';
+			buf[i+10] = '\0';
+			row->data[j].tm->tm_year = strtol(&buf[i], &error, 10) - 1900;
+			if (*error != '\0')
+				return -MYERR_CONVDATE;
+			row->data[j].tm->tm_mon  = strtol(&buf[i+5], &error, 10) - 1;
+			if (*error != '\0')
+				return -MYERR_CONVDATE;
+			row->data[j].tm->tm_mday = strtol(&buf[i+8], &error, 10);
+			if (*error != '\0')
+				return -MYERR_CONVDATE;
+			buf[i+10] = mem;
+			break;
+
+		case MYSQL_TYPE_ENUM:
+		case MYSQL_TYPE_SET:
+		case MYSQL_TYPE_GEOMETRY:
+			break;
+		}
 
 		/* next packet */
 		i += len;

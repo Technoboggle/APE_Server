@@ -4,15 +4,15 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -22,6 +22,8 @@
 #include <stdint.h>
 
 #include "mysac.h"
+
+#define DEBUG(fmt, args...) fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##args);
 
 /* definitions imported from linux-2.6.24/include/linux/list.h */
 
@@ -186,7 +188,7 @@ static inline int set_my_lcb(unsigned long long len, int null, char *out, int ou
 	}
 
 	/* set value 0-250 */
-	if (len >= 0 && len <= 250) {
+	if (len <= 250) {
 		if (out_len < 1)
 			return -1;
 		out[0] = len;
@@ -231,6 +233,17 @@ static inline int set_my_lcb(unsigned long long len, int null, char *out, int ou
 
 	/* error */
 	return -1;
+}
+
+static inline void mysac_print_audit(MYSAC *mysac, const char *fmt, ...) {
+	va_list ap;
+
+	if (mysac->ma == NULL)
+		return;
+
+	va_start(ap, fmt);
+
+	mysac->ma(mysac->ma_arg, fmt, ap);
 }
 
 #endif

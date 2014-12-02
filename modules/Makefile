@@ -18,8 +18,13 @@ all: modules
 include ./mysql.mk
 ifeq ($(HAS_MYSQL), yes)
 MYSQL_DEP_DIR=deps/mysac
-MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac.a
-MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac -lmysqlclient_r
+# Changed the dependancy so it points at the static library produced by mysac-1.1.1
+MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac-static
+#MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac.a
+# Ensured the MYSQL_FLAGS line pointed to the correct libraries:
+MYSQL_LIB_DIR=/usr/lib64/mysql
+MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -L$(MYSQL_LIB_DIR) -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
+#MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac -lmysqlclient_r
 $(MYSQL_DEP):
 	@cd $(MYSQL_DEP_DIR)&&touch make.deps&&make&&cd ../..
 endif

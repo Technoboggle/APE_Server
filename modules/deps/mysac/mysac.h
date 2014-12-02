@@ -4,19 +4,19 @@
  * This file is part of MySAC.
  *
  * MySAC is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License
  *
  * MySAC is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with MySAC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file */ 
+/** @file */
 
 #ifndef __MYSAC_H__
 #define __MYSAC_H__
@@ -36,7 +36,7 @@
 /**
  * container_of - cast a member of a structure out to the containing structure
  *
- * def imported from: linux-2.6.24/include/linux/kernel.h 
+ * def imported from: linux-2.6.24/include/linux/kernel.h
  *
  * @param ptr    the pointer to the member.
  * @param type   the type of the container struct this is embedded in.
@@ -151,7 +151,8 @@ enum {
 	MYERR_CONVDOUBLE,
 	MYERR_CONVTIME,
 	MYERR_CONVTIMESTAMP,
-	MYERR_CONVDATE
+	MYERR_CONVDATE,
+	MYERR_INVALID_EXPECT
 };
 
 extern const char *mysac_type[];
@@ -176,8 +177,8 @@ typedef union {
 	struct tm *tm;              /* MYSQL_TYPE_DATE      DATE
 	                               MYSQL_TYPE_DATETIME  DATETIME
 	                               MYSQL_TYPE_TIMESTAMP TIMESTAMP */
-	char* string;               /* MYSQL_TYPE_STRING    TEXT,CHAR,VARCHAR */
-	char* blob;                 /* MYSQL_TYPE_BLOB      BLOB,BINARY,VARBINARY */
+	char *string;               /* MYSQL_TYPE_STRING    TEXT,CHAR,VARCHAR */
+	char *blob;                 /* MYSQL_TYPE_BLOB      BLOB,BINARY,VARBINARY */
 	void *ptr;                  /* generic pointer */
 } MYSAC_ROW;
 
@@ -199,6 +200,9 @@ typedef struct {
 	int nb_cols;
 	int nb_lines;
 	int nb_time;
+	int extend_bloc_size;
+	int max_len;
+	int do_free;
 	MYSQL_FIELD *cols;
 	struct mysac_list_head data;
 	MYSAC_ROWS *cr;
@@ -213,6 +217,29 @@ typedef struct mysac_bind {
 	int value_len;
 	char is_null;
 } MYSAC_BIND;
+
+/**
+ * This is the expected response type at a request
+ *
+ * If the request is "SELECT", the expected response is DATA
+ * and the data list must contain EOF paquet
+ *
+ * If the request is other, juste expect OK
+ */
+enum my_expected_response_t {
+	MYSAC_EXPECT_DATA = 0,
+	MYSAC_EXPECT_OK,
+	MYSAC_EXPECT_BOTH
+};
+
+/**
+ * This is prototype of function that dump audit messages
+ *
+ * @param arg is opaque pointer set with the function
+ * @param fmt is format in printf style
+ * @param ap is stdarg list of arguments
+ */
+typedef void (*mysac_audit)(void *arg, const char *fmt, va_list ap);
 
 /**
  * This contain the necessary for one mysql connection
@@ -231,12 +258,14 @@ typedef struct mysac {
 	char free_it;
 	int fd;
 	int (*call_it)(/* MYSAC * */ struct mysac *);
+	mysac_audit ma;
+	void *ma_arg;
 
 	/*defconnect */
 	unsigned int protocol;
 	char *version;
 	unsigned int threadid;
-	char salt[SCRAMBLE_LENGTH + 1]; 
+	char salt[SCRAMBLE_LENGTH + 1];
 	unsigned int options;
 	unsigned int charset;
 	unsigned int status;
@@ -257,10 +286,11 @@ typedef struct mysac {
 	unsigned int flags;
 
 	/* query */
+	enum my_expected_response_t expect;
 	enum my_query_st qst;
 	int read_id;
 	MYSAC_RES *res;
-	unsigned long *stmt_id;
+	unsigned int *stmt_id;
 
 	/* the buffer */
 	unsigned int bufsize;
@@ -367,11 +397,7 @@ int mysac_connect(MYSAC *mysac);
  *
  * @param mysac Should be the address of an existing MYSQL structure.
  */
-static inline
-void mysac_close(MYSAC *mysac) {
-	if (mysac->free_it == 1)
-		free(mysac);
-}
+void mysac_close(MYSAC *mysac);
 
 /**
  * This function return the mysql filedescriptor used for connection
@@ -381,10 +407,7 @@ void mysac_close(MYSAC *mysac) {
  *
  * @return mysql filedescriptor
  */
-static inline
-int mysac_get_fd(MYSAC *mysac) {
-	return mysac->fd;
-}
+int mysac_get_fd(MYSAC *mysac);
 
 /**
  * this function call the io function associated with the current
@@ -396,12 +419,21 @@ int mysac_get_fd(MYSAC *mysac) {
  *         mysac_send_database, mysac_send_query and mysac_connect or
  *    MYERR_BAD_STATE : the function does nothing to do (is an error)
  */
-static inline
-int mysac_io(MYSAC *mysac) {
-	if (mysac == NULL || mysac->call_it == NULL)
-		return MYERR_BAD_STATE;
-	return mysac->call_it(mysac);
-}
+int mysac_io(MYSAC *mysac);
+
+/**
+ * This fonction enable and set audit dump fonction into mysac
+ *
+ * The audit dump memory usage. Is used for tracking calls to
+ * realloc. The realloc is very resource consumer. The best parctice
+ * is to evaluate the good size of the reponse before sending the
+ * request. This function is used for choosing the values.
+ *
+ * @param mysac Should be the address of an existing MYSQL structure.
+ * @param arg is opaque pointer set with the function
+ * @param ma is pointer to print function
+ */
+void mysac_set_audit_fcn(MYSAC *mysac, void *arg, mysac_audit ma);
 
 /**
  * Build use database message
@@ -431,7 +463,7 @@ int mysac_send_database(MYSAC *mysac);
  * @param buffer this buffer must contain all the sql response.
  *        this size is:
  *        sizeof(MYSAC_RES) +
- *        ( sizeof(MYSQL_FIELD) * nb_field ) + 
+ *        ( sizeof(MYSQL_FIELD) * nb_field ) +
  *        ( different fields names )
  *
  *        and for each row:
@@ -445,22 +477,28 @@ int mysac_send_database(MYSAC *mysac);
  *
  * @return MYSAC_RES. this function cannot be fail
  */
-static inline
-MYSAC_RES *mysac_init_res(char *buffer, int len) {
-	MYSAC_RES *res;
+MYSAC_RES *mysac_init_res(char *buffer, int len);
 
-	/* check minimu length */
-	if (len < sizeof(MYSAC_RES))
-		return NULL;
+/**
+ * Create new MYSAC_RES structur
+ * This function allocate memory
+ *
+ * WARNING: If extend is set, you must use the function mysac_get_res
+ *          for retrieving the resource pointer after each call att
+ *          mysac_send_query.
+ *
+ * @param chunk_size is the size allocated for the bloc
+ * @param extend if is true, the block is extended if the initial
+ *               memory does not enough. the extension size is the size
+ *               of chunk_size
+ */
+MYSAC_RES *mysac_new_res(int chunk_size, int extend);
 
-	res = (MYSAC_RES *)buffer;
-	res->nb_cols = 0;
-	res->nb_lines = 0;
-	res->buffer = buffer + sizeof(MYSAC_RES);
-	res->buffer_len = len - sizeof(MYSAC_RES);
-
-	return res;
-}
+/**
+ * Destroy MYSAC_RES structur
+ * This function free memory
+ */
+void mysac_free_res(MYSAC_RES *r);
 
 /**
  * Initialize query
@@ -506,23 +544,20 @@ int mysac_s_set_query(MYSAC *mysac, MYSAC_RES *res, const char *query);
  *
  * @return 0: ok, -1 nok
  */
-int mysac_b_set_query(MYSAC *mysac, MYSAC_RES *res, const char *query, int len);
+int mysac_b_set_query(MYSAC *mysac, MYSAC_RES *res, const char *query, unsigned int len);
 
 /**
- * This function return the mysql response pointer 
+ * This function return the mysql response pointer
  *
  * @param mysac Should be the address of an existing MYSAC structure.
  *
  * @return mysql response pointer
  */
-static inline
-MYSAC_RES *mysac_get_res(MYSAC *mysac) {
-	return mysac->res;
-}
+MYSAC_RES *mysac_get_res(MYSAC *mysac);
 
 /**
  * Send sql query command
- * 
+ *
  * @param mysac Should be the address of an existing MYSAC structur.
  *
  * @return
@@ -542,7 +577,7 @@ int mysac_send_query(MYSAC *mysac);
  *
  * @return 0: ok, -1 nok
  */
-int mysac_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *fmt, ...);
+int mysac_set_stmt_prepare(MYSAC *mysac, unsigned int *stmt_id, const char *fmt, ...);
 
 /**
  * Prepare statement
@@ -554,7 +589,7 @@ int mysac_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *fmt
  *
  * @return 0: ok, -1 nok
  */
-int mysac_v_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *fmt, va_list ap);
+int mysac_v_set_stmt_prepare(MYSAC *mysac, unsigned int *stmt_id, const char *fmt, va_list ap);
 
 /**
  * Prepare statement
@@ -565,7 +600,7 @@ int mysac_v_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *f
  *
  * @return 0: ok, -1 nok
  */
-int mysac_s_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *request);
+int mysac_s_set_stmt_prepare(MYSAC *mysac, unsigned int *stmt_id, const char *request);
 
 /**
  * Prepare statement
@@ -577,7 +612,7 @@ int mysac_s_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *r
  *
  * @return 0: ok, -1 nok
  */
-int mysac_b_set_stmt_prepare(MYSAC *mysac, unsigned long *stmt_id, const char *request, int len);
+int mysac_b_set_stmt_prepare(MYSAC *mysac, unsigned int *stmt_id, const char *request, int len);
 
 /**
  * Send sql query command
@@ -604,7 +639,7 @@ int mysac_send_stmt_prepare(MYSAC *mysac);
  *
  * @return 0: ok, -1 nok
  */
-int mysac_set_stmt_execute(MYSAC *mysac, MYSAC_RES *res, unsigned long stmt_id,
+int mysac_set_stmt_execute(MYSAC *mysac, MYSAC_RES *res, unsigned int stmt_id,
                            MYSAC_BIND *values, int nb);
 
 /**
@@ -612,12 +647,9 @@ int mysac_set_stmt_execute(MYSAC *mysac, MYSAC_RES *res, unsigned long stmt_id,
  *
  * @param mysac Should be the address of an existing MYSQL structure.
  *
- * @return 
+ * @return
  */
-static inline
-int mysac_send_stmt_execute(MYSAC *mysac) {
-	return mysac_send_query(mysac);
-}
+int mysac_send_stmt_execute(MYSAC *mysac);
 
 /**
  * After executing a statement with mysql_query() returns the number of rows
@@ -645,31 +677,25 @@ int mysac_affected_rows(MYSAC *mysac);
  *
  * @return number of columns
  */
-static inline
-unsigned int mysac_field_count(MYSAC_RES *res) {
-	return res->nb_cols;
-}
+unsigned int mysac_field_count(MYSAC_RES *res);
 
 /**
  * Returns the number of rows in the result set.
- * 
+ *
  * mysql_num_rows() is intended for use with statements that return a result
  * set, such as SELECT. For statements such as INSERT, UPDATE, or DELETE, the
  * number of affected rows can be obtained with mysql_affected_rows().
  *
  * @param res Should be the address of an existing MYSAC_RES structure.
  *
- * @return The number of rows in the result set. 
+ * @return The number of rows in the result set.
  */
-static inline
-unsigned long mysac_num_rows(MYSAC_RES *res) {
-	return res->nb_lines;
-}
+unsigned long mysac_num_rows(MYSAC_RES *res);
 
 /**
  * Retrieves the next row of a result set. mysql_fetch_row() returns NULL when
  * there are no more rows to retrieve or if an error occurred.
- * 
+ *
  * The number of values in the row is given by mysql_num_fields(result).
  *
  * The lengths of the field values in the row may be obtained by calling
@@ -679,39 +705,22 @@ unsigned long mysac_num_rows(MYSAC_RES *res) {
  * empty.
  *
  * @param res Should be the address of an existing MYSAC_RES structure.
- * 
+ *
  * @return A MYSAC_ROW structure for the next row. NULL if there are no more
- * rows to retrieve or if an error occurred. 
+ * rows to retrieve or if an error occurred.
  */
-static inline
-MYSAC_ROW *mysac_fetch_row(MYSAC_RES *res) {
-	if (res->cr == NULL)
-		res->cr = mysac_list_first_entry(&res->data, MYSAC_ROWS, link);
-	else
-		res->cr = mysac_list_next_entry(&res->cr->link, MYSAC_ROWS, link);
-	if (&res->data == &res->cr->link) {
-		res->cr = NULL;
-		return NULL;
-	}
-	return res->cr->data;
-}
+MYSAC_ROW *mysac_fetch_row(MYSAC_RES *res);
 
 /**
  * Set pointer on the first row, you can exec mysac_fetch_row, return it the
  * first row;
  */
-static inline
-void mysac_first_row(MYSAC_RES *res) {
-	res->cr = NULL;
-}
+void mysac_first_row(MYSAC_RES *res);
 
 /**
  * Get current row, dont touch row ptr
  */
-static inline
-MYSAC_ROW *mysac_cur_row(MYSAC_RES *res) {
-	return res->cr->data;
-}
+MYSAC_ROW *mysac_cur_row(MYSAC_RES *res);
 
 /**
  * Returns the value generated for an AUTO_INCREMENT column by the previous
@@ -724,11 +733,7 @@ MYSAC_ROW *mysac_cur_row(MYSAC_RES *res) {
  *
  * @return the value generated for an AUTO_INCREMENT column
  */
-static inline
-unsigned long mysac_insert_id(MYSAC *m) {
-	return m->insert_id;
-}
-
+unsigned long mysac_insert_id(MYSAC *m);
 
 
 #if 0
@@ -767,7 +772,7 @@ mysql_fetch_lengths() /*Returns the lengths of all columns in the current row*/
  * @param db The db parameter may be set to NULL if you don't want to have a
  *        default database.
  *
- * @return 
+ * @return
  *    CR_COMMANDS_OUT_OF_SYNC  : Commands were executed in an improper order.
  *    CR_SERVER_GONE_ERROR     : The MySQL server has gone away.
  *    CR_SERVER_LOST           : The connection to the server was lost during
@@ -788,8 +793,8 @@ int mysac_change_user(MYSAC *mysac, const char *user, const char *passwd,
  * Returns the default character set name for the current connection.
  *
  * @param mysac Should be the address of an existing MYSQL structure.
- * 
- * @return The default character set name 
+ *
+ * @return The default character set name
  */
 //const char *mysac_character_set_name(MYSAC *mysac);
 
@@ -799,14 +804,11 @@ int mysac_change_user(MYSAC *mysac, const char *user, const char *passwd,
  * value of zero means that no error occurred. Client error message numbers are
  * listed in the MySQL errmsg.h header file. Server error message numbers are
  * listed in mysqld_error.h. Errors also are listed at Appendix B, Errors, Error
- * Codes, and Common Problems. 
+ * Codes, and Common Problems.
  *
  * @param mysac Should be the address of an existing MYSQL structure.
  */
-static inline
-unsigned int mysac_errno(MYSAC *mysac) {
-	return mysac->errorcode;
-}
+unsigned int mysac_errno(MYSAC *mysac);
 
 /**
  * For the connection specified by mysql, mysql_error() returns a null-
@@ -817,10 +819,7 @@ unsigned int mysac_errno(MYSAC *mysac) {
  *
  * @param mysac Should be the address of an existing MYSQL structure.
  */
-static inline 
-const char *mysac_error(MYSAC *mysac) {
-	return mysac_errors[mysac->errorcode];
-}
+const char *mysac_error(MYSAC *mysac);
 
 /**
  * For the connection specified by mysql, mysql_error() returns a null-
@@ -831,15 +830,7 @@ const char *mysac_error(MYSAC *mysac) {
  *
  * @param mysac Should be the address of an existing MYSQL structure.
  */
-static inline 
-const char *mysac_advance_error(MYSAC *mysac) {
-	if (mysac->errorcode == MYERR_MYSQL_ERROR)
-		return mysac->mysql_error;
-	else if (mysac->errorcode == MYERR_SYSTEM)
-		return strerror(errno);
-	else
-		return mysac_errors[mysac->errorcode];
-}
+const char *mysac_advance_error(MYSAC *mysac);
 
 /*
 1607 ulong STDCALL
