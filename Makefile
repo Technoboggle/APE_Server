@@ -66,7 +66,7 @@ $(tmpdir)/%.o:
 	@echo compiling $@
 	@$(CC) $(CFLAGS) $(DEBUGFLAGS) $(PROFILEFLAGS) -c $(<D)/$(<F) -o $@
 
-$(UDNS): s
+$(UDNS):
 	@cd ./deps/udns-0.4/&&make clean&&./configure&&make&&cd ../../
 
 $(LIBMEMCACHE):
