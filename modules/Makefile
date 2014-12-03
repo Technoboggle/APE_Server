@@ -4,8 +4,12 @@ CC=gcc -D_GNU_SOURCE
 SPIDERMONKEYMOD=libmod_spidermonkey.so
 SPIDERMONKEYSRC=libape-spidermonkey.c
 HEADERS=global_plugins.h plugins.h ../src/configure.h
-UDNS=../deps/udns-0.0.9/libudns.a
-FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.0.9/ -L../deps/js/src/ -ljs_static -lstdc++
+# Changed following line to point to latest version of udns
+UDNS=../deps/udns-0.4/libudns.a
+#UDNS=../deps/udns-0.0.9/libudns.a
+# Changed following line to point to latest version of udns
+FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -L../deps/js/src/ -ljs_static -lstdc++
+#FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.0.9/ -L../deps/js/src/ -ljs_static -lstdc++
 
 include ../build.mk
 ifdef STAGING_DEBUG
@@ -19,7 +23,7 @@ include ./mysql.mk
 ifeq ($(HAS_MYSQL), yes)
 MYSQL_DEP_DIR=deps/mysac
 # Changed the dependancy so it points at the static library produced by mysac-1.1.1
-MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac-static
+MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac-static.a
 #MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac.a
 # Ensured the MYSQL_FLAGS line pointed to the correct libraries:
 MYSQL_LIB_DIR=/usr/lib64/mysql

@@ -6,14 +6,14 @@ OBJ=$(tmpdir)/base64.o $(tmpdir)/channel.o $(tmpdir)/cmd.o $(tmpdir)/config.o $(
 # $(tmpdir)/proxy.o
 TARGET=aped
 EXEC=bin/$(TARGET)
-UDNS=./deps/udns-0.0.9/libudns.a
+UDNS=./deps/udns-0.4/libudns.a
 include ./build.mk
 ifdef STAGING_DEBUG
 DEBUGFLAGS=-g -ggdb
 PROFILEFLAGS=-pg -profile
 # -fdump-rtl-expand
 endif
-CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.0.9/
+CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.4/
 LFLAGS=-rdynamic -ldl -lm -lpthread
 CC=gcc -D_GNU_SOURCE
 RM=rm -f
@@ -66,7 +66,7 @@ $(tmpdir)/%.o:
 	@$(CC) $(CFLAGS) $(DEBUGFLAGS) $(PROFILEFLAGS) -c $(<D)/$(<F) -o $@
 
 $(UDNS):
-	@cd ./deps/udns-0.0.9/&&make clean&&./configure&&make&&cd ../../
+	@cd ./deps/udns-0.4/&&make clean&&./configure&&make&&cd ../../
 
 $(tmpdir):
 	@mkdir -p $(tmpdir)

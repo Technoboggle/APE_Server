@@ -1,10 +1,13 @@
 #!/bin/bash
 
+chmod a+x ./deps/udns-0.4/configure
+chmod a+x ./deps/js/src/configure
+chmod a+x ./deps/js/src/ctypes/libffi/configure
 if [ -n "$1" ] && [ "$1" = "clean" ]; then
 	make clean
 	cd ./modules&&make clean
 	cd ./deps/mysac&&make clean
-	cd ../../../deps/udns-0.0.9&&make clean
+	cd ../../../deps/udns-0.4&&make clean
 	cd ../js/src&&make clean&&cd ../..
 else
 	rm -f ./src/configure.h ./modules/platform.mk ./modules/mysql.mk

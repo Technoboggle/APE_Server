@@ -6,6 +6,7 @@ bin/ape.log
 build.mk
 
 src/configure.h
+src/build
 
 modules/lib/libmod_spidermonkey.so*
 modules/mysql.mk
@@ -13,7 +14,18 @@ modules/platform.mk
 modules/deps/mysac/*.a
 modules/deps/mysac/*.o
 modules/deps/mysac/make.deps
+modules/deps/mysac/exemple/client
+modules/deps/mysac/exemple/client.o
+modules/deps/mysac/exemple/client_bigmem
+modules/deps/mysac/exemple/client_bigmem.o
+modules/deps/mysac/exemple/client_iofunc
+modules/deps/mysac/exemple/client_iofunc.o
+modules/deps/mysac/exemple/client_stmt
+modules/deps/mysac/exemple/client_stmt.o
+modules/deps/mysac/exemple/dump_response.o
+modules/deps/mysac/libmysac.so
 
+deps/js/src/js
 deps/js/src/*.o
 deps/js/src/*.so
 deps/js/src/js-confdefs.h
