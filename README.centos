@@ -1,0 +1,39 @@
+In order to install this version of the system on centos 6, a number of packages
+need to be updated. Please follow the instructions below to install the packages required by libmemcached
+
+
+#Update the System
+sudo yum -y update
+
+#Install the Platform Development Tools
+sudo yum -y groupinstall "Development Tools"
+
+#Upgrade autoconf
+wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+tar xvf autoconf-2.69.tar.gz
+cd autoconf-2.69
+./configure --prefix=/usr
+make
+sudo make install
+cd ..
+
+#Upgrade automake
+wget http://ftp.gnu.org/gnu/automake/automake-1.13.tar.gz
+tar xvf automake-1.13.tar.gz
+cd automake-1.13
+./configure --prefix=/usr
+make
+sudo make install
+cd ..
+
+#Upgrade bison
+wget ftp://ftp.gnu.org/gnu/bison/bison-2.5.1.tar.gz
+tar xvf bison-2.5.1.tar.gz
+cd bison-2.5.1
+./configure --prefix=/usr
+make
+sudo make install
+cd ..
+
+#Install C++ Lib Dependencies
+sudo yum -y install libevent-devel zlib-devel openssl-devel

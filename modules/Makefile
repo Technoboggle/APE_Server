@@ -8,8 +8,11 @@ HEADERS=global_plugins.h plugins.h ../src/configure.h
 UDNS=../deps/udns-0.4/libudns.a
 #UDNS=../deps/udns-0.0.9/libudns.a
 # Changed following line to point to latest version of udns
-FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -L../deps/js/src/ -ljs_static -lstdc++
-#FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.0.9/ -L../deps/js/src/ -ljs_static -lstdc++
+
+# Following line added to include libmemcached
+LIBMEMCACHE=../deps/libmemcached-1.0.18/libmemcache.a
+
+FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -I ../deps/libmemcached-1.0.18/ -L../deps/js/src/ -ljs_static -lstdc++
 
 include ../build.mk
 ifdef STAGING_DEBUG

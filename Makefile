@@ -7,13 +7,14 @@ OBJ=$(tmpdir)/base64.o $(tmpdir)/channel.o $(tmpdir)/cmd.o $(tmpdir)/config.o $(
 TARGET=aped
 EXEC=bin/$(TARGET)
 UDNS=./deps/udns-0.4/libudns.a
+LIBMEMCACHE=./deps/libmemcached-1.0.18/libmemcached/.libs/libmemcached.a
 include ./build.mk
 ifdef STAGING_DEBUG
 DEBUGFLAGS=-g -ggdb
 PROFILEFLAGS=-pg -profile
 # -fdump-rtl-expand
 endif
-CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.4/
+CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.4/ -I ./deps/libmemcached-1.0.18/libmemcached/.libs/
 LFLAGS=-rdynamic -ldl -lm -lpthread
 CC=gcc -D_GNU_SOURCE
 RM=rm -f
@@ -22,8 +23,8 @@ all: $(EXEC)
 
 SRC=src/entry.c src/sock.c src/hash.c src/handle_http.c src/cmd.c src/users.c src/channel.c src/config.c src/json.c src/json_parser.c src/plugins.c src/http.c src/extend.c src/utils.c src/ticks.c src/base64.c src/pipe.c src/raw.c src/events.c src/event_kqueue.c src/event_epoll.c src/event_select.c src/transports.c src/servers.c src/dns.c src/sha1.c src/log.c src/parser.c src/md5.c
 
-$(EXEC): $(OBJ) $(UDNS) modules
-	@$(CC) $(OBJ) -o $(EXEC) $(LFLAGS) $(UDNS)
+$(EXEC): $(OBJ) $(UDNS) $(LIBMEMCACHE) modules
+	@$(CC) $(OBJ) -o $(EXEC) $(LFLAGS) $(UDNS) $(LIBMEMCACHE)
 ifdef STAGING_RELEASE
 	@strip $(EXEC)
 endif
@@ -65,8 +66,11 @@ $(tmpdir)/%.o:
 	@echo compiling $@
 	@$(CC) $(CFLAGS) $(DEBUGFLAGS) $(PROFILEFLAGS) -c $(<D)/$(<F) -o $@
 
-$(UDNS):
+$(UDNS): s
 	@cd ./deps/udns-0.4/&&make clean&&./configure&&make&&cd ../../
+
+$(LIBMEMCACHE):
+	@cd ./deps/libmemcached-1.0.18/&&./configure&&make&&cd ../../
 
 $(tmpdir):
 	@mkdir -p $(tmpdir)
