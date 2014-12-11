@@ -1,42 +1,45 @@
-In order to install this version of the system on centos 6, a number of packages
-need to be updated. Please follow the instructions below to install the packages required by libmemcached
+#enabled keyboard switching
+sudo apt-get install console-common
+# Use the following if you need to change
+sudo dpkg-reconfigure console-data
 
-
-#Update the System
-sudo yum -y update
-
-#Install the Platform Development Tools
-sudo yum -y groupinstall "Development Tools"
+# Install the compiler etc
+sudo apt-get install build-essential
+sudo install php5-cgi
+sudo install g++ gcc unzip make zip libmysqlclient-dev m4
+sudo apt-get install nginx
+sudo apt-get install mysql-server
+sudo mysql_install_db
+sudo mysql_secure_installation
+sudo apt-get install php5-fpm php5-mysql
 
 #Upgrade autoconf
+cd /repos
 wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
-tar xzf autoconf-2.69.tar.gz
-cd autoconf-2.69
-./configure --prefix=/usr
-make
-sudo make install
-cd ..
+sudo tar xzf autoconf-2.69.tar.gz
+sudo cd autoconf-2.69
+sudo ./configure —prefix=/usr
+sudo make
+cd ../
 
 #Upgrade automake
-wget http://ftp.gnu.org/gnu/automake/automake-1.13.tar.gz
-tar xvf automake-1.13.tar.gz
-cd automake-1.13
-./configure --prefix=/usr
-make
-sudo make install
-cd ..
+wget http://ftp.gnu.org/gnu/autoconf/automake-1.13.tar.gz
+sudo tar xzf automake-1.13.tar.gz
+sudo cd automake-1.13
+sudo ./configure —prefix=/usr
+sudo make
+cd ../
 
 #Upgrade bison
-wget ftp://ftp.gnu.org/gnu/bison/bison-2.5.1.tar.gz
-tar xvf bison-2.5.1.tar.gz
-cd bison-2.5.1
-./configure --prefix=/usr
-make
-sudo make install
-cd ..
+wget http://ftp.gnu.org/gnu/bison/bison-2.5.1.tar.gz
+sudo tar xzf bison-2.5.1.tar.gz
+sudo cd bison-2.5.1
+sudo ./configure —prefix=/usr
+sudo make
+cd ../
 
 #Install C++ Lib Dependencies
-sudo yum -y install libevent-devel zlib-devel ls-sdasdadasd
+sudo apt-get install libevent-dev libz-dev liblzma-dev libssl-dev
 
 # Getting started
 cd /repos
@@ -58,8 +61,9 @@ git branch -a
 
 # Now you finally have the repo downloaded and are in the correct branch you must
 # edit the Makefile in the top level directory so that the line:
-
+MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -L$(MYSQL_LIB_DIR) -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
 # beconmes:
+MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
 
 
 # WooHoo you are now ready to build APE:
@@ -100,5 +104,4 @@ git pull origin Ongoing_Development
 
 # To push your changes use:
 git push origin Ongoing_Development
-
 

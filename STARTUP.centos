@@ -1,0 +1,90 @@
+Startup script
+
+1) Copy the script contents (below) into a new file: /etc/init.d/aped
+2) Add the script to the services by running this command:
+   chkconfig --add aped
+3) Run /usr/sbin/ntsysv and enable or disable the aped service at boot.
+4) Open /bin/ape.conf and set "daemon = yes"
+5) Ensure you set execute access to /etc/init.d/aped by using
+   chmod a=x /etc/init.d/aped
+6) Start the aped daemon by executing "/etc/init.d/aped start"
+
+## /bin/sh
+# /etc/init.d/aped
+#
+# chkconfig: 2345 85 15
+# description: APE Daemon
+# processname: APE Daemon
+#
+# Install the service with chkconfig --add aped
+#
+# Define where ape is installed.
+# The trailing slash is required ( Example : /my/path/bin/ )
+APE_DIRECTORY=/etc/ape/
+
+# Define the PID File
+PIDFILE=/var/run/aped.pid
+
+# Source function library.
+. /etc/init.d/functions
+
+DAEMON="/usr/bin/aped --cfg ${APE_DIRECTORY}ape.conf > /dev/null"
+
+start() {
+
+        echo -n "Starting APE... "
+
+        cd $APE_DIRECTORY;
+        daemon $DAEMON
+        RETVAL=$?
+        echo
+        [ $RETVAL = 0 ] && touch /var/lock/subsys/aped
+        return $RETVAL
+}
+
+stop() {
+        echo "Stopping APE..."
+        kill `cat /var/run/aped.pid`
+        RETVAL=$?
+        echo
+        [ $RETVAL = 0 ] && rm -f /var/lock/subsys/aped
+}
+
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage:  {start|stop|restart}"
+        exit 1
+        ;;
+esac
+exit $RETVAL
+# SSCRIPT ENDS HERE #
+
+
+You may can use
+
+APE:~# service aped stop
+APE:~# service aped start
+
+In theory, restarting should work just as well, but an error may occur such that the daemon either may not start, or may appear not to have started. In this case, to check whether the service is running, enter one of the following commands:
+
+APE:~# ps faux | grep aped
+
+If aped is running, this command will show the grep aped command process and the one for the APE daemon; if not, it will show only the grep aped process information.
+
+APE:~# pgrep aped
+APE:~# pidof aped
+
+If running, either of the last two commands will return only the process id of the aped process; if you get a process id, then you know the APE Server is running. In any case, if the server isn't running, simply enter (as root):
+
+APE:~# service aped start

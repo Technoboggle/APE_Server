@@ -10,9 +10,9 @@ UDNS=../deps/udns-0.4/libudns.a
 # Changed following line to point to latest version of udns
 
 # Following line added to include libmemcached
-LIBMEMCACHE=../deps/libmemcached-1.0.18/libmemcache.a
+LIBMEMCACHE=../deps/libmemcached-1.0.18/libmemcached/.libs/libmemcached.a
 
-FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -I ../deps/libmemcached-1.0.18/ -L../deps/js/src/ -ljs_static -lstdc++
+FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -I ../deps/libmemcached-1.0.18/libmemcached/ -L../deps/js/src/ -ljs_static -lstdc++
 
 include ../build.mk
 ifdef STAGING_DEBUG
@@ -31,7 +31,7 @@ MYSQL_DEP=$(MYSQL_DEP_DIR)/libmysac-static.a
 # Ensured the MYSQL_FLAGS line pointed to the correct libraries:
 MYSQL_LIB_DIR=/usr/lib64/mysql
 MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -L$(MYSQL_LIB_DIR) -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
-#MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac -lmysqlclient_r
+#MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
 $(MYSQL_DEP):
 	@cd $(MYSQL_DEP_DIR)&&touch make.deps&&make&&cd ../..
 endif

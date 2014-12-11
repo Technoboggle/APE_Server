@@ -62,6 +62,7 @@ deps/udns*/rblcheck
 deps/udns*/config.log
 deps/udns*/libudns.a
 
+deps/libmemcached-1.0.18/autom4te.cache
 deps/libmemcached-1.0.18/aminclude
 deps/libmemcached-1.0.18/clients/.deps
 deps/libmemcached-1.0.18/clients/.libs
