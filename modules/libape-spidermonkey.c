@@ -26,7 +26,7 @@
 #include <mysac.h>
 #endif
 #ifdef _USE_MEMCACHE
-#include "../deps/libmemcached-1.0.18/libmemcached-1.0/memcached.h"
+#include <libmemcached-1.0/memcached.h>
 #endif
 #include <jsapi.h>
 #include <stdio.h>
