@@ -14,7 +14,7 @@ DEBUGFLAGS=-g -ggdb
 PROFILEFLAGS=-pg -profile
 # -fdump-rtl-expand
 endif
-CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.4/ -I ./deps/libmemcached-1.0.18/
+CFLAGS=-Wall -O2 -minline-all-stringops -I ./deps/udns-0.4/ -I ./deps/libmemcached-1.0.18/ -fno-stack-protector
 LFLAGS=-rdynamic -ldl -lm -lpthread
 CC=gcc -D_GNU_SOURCE
 RM=rm -f
