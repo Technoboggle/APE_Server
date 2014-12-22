@@ -12,7 +12,7 @@ UDNS=../deps/udns-0.4/libudns.a
 # Following line added to include libmemcached
 LIBMEMCACHE=../deps/libmemcached-1.0.18/libmemcached/.libs/libmemcached.a
 
-FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -I ../deps/libmemcached-1.0.18/libmemcached/ -L../deps/js/src/ -ljs_static -lstdc++
+FLAGS=-I ../deps/js/src/dist/include/ -I ../deps/udns-0.4/ -I ../deps/libmemcached-1.0.18/ -L../deps/js/src/ -ljs_static -lstdc++
 
 include ../build.mk
 ifdef STAGING_DEBUG

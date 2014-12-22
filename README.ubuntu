@@ -1,3 +1,8 @@
+# If installing on fresh install of Ubuntu execute the following commands
+sudo apt-get update
+sudo apt-get upgrade
+sudo do-release-upgrade -d
+
 #enabled keyboard switching
 sudo apt-get install console-common
 # Use the following if you need to change
@@ -5,45 +10,50 @@ sudo dpkg-reconfigure console-data
 
 # Install the compiler etc
 sudo apt-get install build-essential
-sudo install php5-cgi
-sudo install g++ gcc unzip make zip libmysqlclient-dev m4
-sudo apt-get install nginx
+sudo apt-get install php5-common php5-json php5-cgi
+sudo apt-get install g++ gcc unzip make zip mysql-client libmysqlclient-dev m4
+sudo apt-get install fontconfig-config fonts-dejavu-core libfontconfig1 libgd3 libjbig0 libjpeg-turbo8 libtiff5 libvpx1 libxpm4 libxslt1.1 nginx-common nginx-core libgd-tools fcgiwrap nginx-doc ssl-cert nginx
 sudo apt-get install mysql-server
 sudo mysql_install_db
 sudo mysql_secure_installation
 sudo apt-get install php5-fpm php5-mysql
 
 #Upgrade autoconf
+sudo mkdir /repos
+sudo chown root:sudo /repos
 cd /repos
-wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+sudo wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
 sudo tar xzf autoconf-2.69.tar.gz
-sudo cd autoconf-2.69
+cd autoconf-2.69
 sudo ./configure —prefix=/usr
 sudo make
+sudo make install
 cd ../
 
 #Upgrade automake
-wget http://ftp.gnu.org/gnu/autoconf/automake-1.13.tar.gz
+sudo wget http://ftp.gnu.org/gnu/automake/automake-1.13.tar.gz
 sudo tar xzf automake-1.13.tar.gz
-sudo cd automake-1.13
+cd automake-1.13
 sudo ./configure —prefix=/usr
 sudo make
+sudo make install
 cd ../
 
 #Upgrade bison
 wget http://ftp.gnu.org/gnu/bison/bison-2.5.1.tar.gz
 sudo tar xzf bison-2.5.1.tar.gz
-sudo cd bison-2.5.1
+cd bison-2.5.1
 sudo ./configure —prefix=/usr
 sudo make
+sudo make install
 cd ../
 
 #Install C++ Lib Dependencies
-sudo apt-get install libevent-dev libz-dev liblzma-dev libssl-dev
+sudo apt-get install libevent-dev libz-dev liblzma-dev libssl-dev -y
 
 # Getting started
 cd /repos
-sudo apt-get install git
+sudo apt-get install git -y
 sudo git clone https://github.com/Technoboggle/APE_Server.git
 sudo git clone https://github.com/Technoboggle/APE_JSF.git
 cd APE_Server
@@ -60,7 +70,7 @@ git branch -a
    remotes/origin/master
 
 # Now you finally have the repo downloaded and are in the correct branch you must
-# edit the Makefile in the top level directory so that the line:
+# edit the Makefile in the modules directory so that the line:
 MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -L$(MYSQL_LIB_DIR) -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
 # beconmes:
 MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
