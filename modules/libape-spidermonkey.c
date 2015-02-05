@@ -27,9 +27,11 @@
 #endif
 #ifdef _USE_MEMCACHE
 #include <libmemcached-1.0/memcached.h>
+/* #include <libmemcached/memcached.h>*/
 #endif
 #include <jsapi.h>
 #include <stdio.h>
+#include <string.h>
 #include <glob.h>
 #include <netdb.h>
 #include <sys/types.h>
@@ -175,6 +177,16 @@ static void mysac_query_success(struct _ape_mysql_data *myhandle, int code);
 static struct _ape_mysql_queue *apemysql_push_queue(struct _ape_mysql_data *myhandle, char *query, unsigned int query_len, jsval callback);
 static void apemysql_shift_queue(struct _ape_mysql_data *myhandle);
 #endif
+
+#ifdef _USE_MEMCACHE
+struct _ape_memcached_data {
+	memcached_st server;
+	JSObject *jsmemcached;
+	JSContext *cx;
+};
+#endif
+
+
 //static JSBool sockserver_addproperty(JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 /**
@@ -329,6 +341,15 @@ static JSClass mysql_class = {
 	"MySQL", JSCLASS_HAS_PRIVATE,
 		JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
 		JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, apemysql_finalize,
+		JSCLASS_NO_OPTIONAL_MEMBERS
+};
+#endif
+
+#ifdef _USE_MEMCACHE
+static JSClass memcached_class = {
+	"Memcached", JSCLASS_HAS_PRIVATE,
+		JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+		JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
 		JSCLASS_NO_OPTIONAL_MEMBERS
 };
 #endif
@@ -1935,6 +1956,45 @@ APE_JS_NATIVE(apemysql_sm_query)
 }
 #endif
 
+#ifdef _USE_MEMCACHE
+APE_JS_NATIVE(ape_sm_memcached_constructor)
+//{
+	char* host;
+	int port;
+	struct _ape_memcached_data *myhandle;
+	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "si", &host, &port)) {
+		return JS_TRUE;
+	}
+	myhandle = xmalloc(sizeof(*myhandle));
+	memcached_st *server = memcached_create(NULL);
+	memcached_server_add (server, host, port);
+	myhandle->server = server;
+	myhandle->jsmemcached = obj;
+	myhandle->cx = cx;
+	JS_SetPrivate(cx, obj, myhandle);
+	return JS_TRUE;
+}
+APE_JS_NATIVE(apememcached_sm_get)
+//{
+	JSString* query;
+	struct _ape_memcached_data myhandle;
+	jsval callback;
+	if ((myhandle = JS_GetPrivate(cx, obj)) == NULL) {
+		return JS_TRUE;
+	}
+	if (!JS_ConvertArguments(cx, 1, JS_ARGV(cx, vpn), "S", &query)) {
+		return JS_TRUE;
+	}
+	size_t value_length;
+	uint32_t flags;
+	memcached_return_t error;
+	char value = memcached_get(myhandle->server, JS_GetStringBytes(query), JS_GetStringLength(query), &value_length, &flags, &error);
+	rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, value, value_length));
+	free(value);
+	return JS_TRUE;
+}
+#endif
+
 static JSFunctionSpec apesocket_funcs[] = {
 	JS_FS("write",   apesocket_write,	1, 0),
 	JS_FS("close",   apesocket_close,	0, 0),
@@ -2094,6 +2154,16 @@ static JSFunctionSpec apemysql_funcs[] = {
 
 static JSFunctionSpec apemysql_funcs_static[] = {
 	JS_FS("escape", apemysql_escape, 1, 0),
+	JS_FS_END
+};
+#endif
+
+#ifdef _USE_MEMCACHE
+static JSFunctionSpec apememcached_funcs[] = {
+	JS_FS("get", apememcached_sm_get, 2, 0),
+	JS_FS_END
+};
+static JSFunctionSpec apememcached_funcs_static[] = {
 	JS_FS_END
 };
 #endif
@@ -5244,6 +5314,10 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	JSObject *jsmysql;
 	#endif
 
+	#ifdef _USE_MEMCACHE
+	JSObject *jsmemcached;
+	#endif
+
 	obj = JS_DefineObject(asc->cx, asc->global, "Ape", &ape_class, NULL, 0);
 	os = JS_DefineObject(asc->cx, asc->global, "os", &os_class, NULL, 0);
 	b64 = JS_DefineObject(asc->cx, obj, "base64", &b64_class, NULL, 0);
@@ -5273,6 +5347,11 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 	#ifdef _USE_MYSQL
 	jsmysql = JS_InitClass(asc->cx, obj, NULL, &mysql_class, ape_sm_mysql_constructor, 2, NULL, NULL, NULL, apemysql_funcs_static);
 	#endif
+
+	#ifdef _USE_MEMCACHE
+	jsmemcached = JS_InitClass(asc->cx, obj, NULL, &memcached_class, ape_sm_memcached_constructor, 2, NULL, NULL, NULL, apememcached_funcs_static);
+	#endif
+
 	#if 0
 	JS_InitClass(asc->cx, obj, NULL, &raw_class, ape_sm_raw_constructor, 1, NULL, NULL, NULL, NULL); /* Not used */
 	#endif
@@ -5288,6 +5367,10 @@ static void ape_sm_define_ape(ape_sm_compiled *asc, JSContext *gcx, acetables *g
 
 	#ifdef _USE_MYSQL
 	JS_DefineFunctions(asc->cx, jsmysql, apemysql_funcs);
+	#endif
+
+	#ifdef _USE_MEMCACHE
+	JS_DefineFunctions(asc->cx, jsmemcached, apememcached_funcs);
 	#endif
 
 	JS_SetContextPrivate(asc->cx, asc);
