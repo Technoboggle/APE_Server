@@ -17,17 +17,25 @@
 #
 SHELL=/bin/bash
 # Mysql lib directory
-# exemple: <path>/mysql-5.1.41/libmysql_r/.libs
+# example: <path>/mysql-5.1.41/libmysql_r/.libs
 # For Fedora type builds including Centos use the following line
-MYSQL_LIB := /usr/lib64/mysql
+#MYSQL_LIB := /usr/lib64/mysql
 # For Debian / Ubuntu type builds use:
 #MYSQL_LIB := /usr/lib
+
+########################
+# Attempt to auto-detect the correct location of MYSQL_LIB
+MYSQL_LIB=$(shell ../../../path_finder.sh)
+$(MYSQL_LIB):
+	MYSQL_LIB=$(shell ../../../path_finder.sh)
+$(warning MYSQL_LIB is currently $(MYSQL_LIB))
+########################
 
 # Mysql include directory
 # exemple: <path>/mysql-5.1.41/include
 MYSQL_INC := /usr/include/mysql
 
-# get build version from the git tree in the form "lasttag-changes", 
+# get build version from the git tree in the form "lasttag-changes",
 # and use "VERSION" file if unknown.
 BUILDVER := $(shell ./mysac_ver)
 

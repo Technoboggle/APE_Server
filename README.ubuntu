@@ -71,7 +71,7 @@ git branch -a
 
 # Now you finally have the repo downloaded and are in the correct branch you must
 # edit the Makefile in the modules directory so that the line:
-MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -L$(MYSQL_LIB_DIR) -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
+MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -L $(MYSQL_LIB_DIR) -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
 # beconmes:
 MYSQL_FLAGS=-L ./$(MYSQL_DEP_DIR)/ -I ./$(MYSQL_DEP_DIR)/ -lmysac-static -lmysqlclient_r
 
