@@ -25,11 +25,21 @@ SHELL=/bin/bash
 
 ########################
 # Attempt to auto-detect the correct location of MYSQL_LIB
-MYSQL_LIB=$(shell ../../../path_finder.sh)
-$(MYSQL_LIB):
-	MYSQL_LIB=$(shell ../../../path_finder.sh)
-$(warning MYSQL_LIB is currently $(MYSQL_LIB))
+MYSQL_TEMP:=$(shell ../../../path_finder.sh)
 ########################
+
+MYSQL2:=$(MYSQL_TEMP)/x86_64-linux-gnu
+
+ARCH_USED := $(shell uname -i)
+ifneq (,$(wildcard $(MYSQL2)/.))
+$(warning x86_64-linux-gnu exists)
+MYSQL_LIB:=$(MYSQL_TEMP) -L$(MYSQL2)
+else
+MYSQL_LIB:=$(MYSQL_TEMP)
+endif
+$(warning ARCH_USED is $(ARCH_USED))
+$(warning MYSQL_LIB is currently $(MYSQL_LIB))
+
 
 # Mysql include directory
 # exemple: <path>/mysql-5.1.41/include

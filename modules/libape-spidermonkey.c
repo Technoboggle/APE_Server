@@ -26,8 +26,8 @@
 #include <mysac.h>
 #endif
 #ifdef _USE_MEMCACHE
-#include <libmemcached-1.0/memcached.h>
-/* #include <libmemcached/memcached.h>*/
+/*#include <libmemcached-1.0/memcached.h>*/
+#include <libmemcached/memcached.h>
 #endif
 #include <jsapi.h>
 #include <stdio.h>
@@ -1965,20 +1965,26 @@ APE_JS_NATIVE(ape_sm_memcached_constructor)
 	if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vpn), "si", &host, &port)) {
 		return JS_TRUE;
 	}
-	myhandle = xmalloc(sizeof(*myhandle));
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+
+	myhandle = xmalloc(sizeof(myhandle));
 	memcached_st *server = memcached_create(NULL);
 	memcached_server_add (server, host, port);
-	myhandle->server = server;
+	myhandle->server = *server;
 	myhandle->jsmemcached = obj;
 	myhandle->cx = cx;
 	JS_SetPrivate(cx, obj, myhandle);
 	return JS_TRUE;
 }
+
 APE_JS_NATIVE(apememcached_sm_get)
 //{
-	JSString* query;
-	struct _ape_memcached_data myhandle;
+	JSString *query;
+	jsval rval;
+	struct _ape_memcached_data *myhandle;
 	jsval callback;
+	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
+
 	if ((myhandle = JS_GetPrivate(cx, obj)) == NULL) {
 		return JS_TRUE;
 	}
@@ -1988,7 +1994,7 @@ APE_JS_NATIVE(apememcached_sm_get)
 	size_t value_length;
 	uint32_t flags;
 	memcached_return_t error;
-	char value = memcached_get(myhandle->server, JS_GetStringBytes(query), JS_GetStringLength(query), &value_length, &flags, &error);
+	char value = memcached_get(&myhandle->server, JS_GetStringBytes(query), JS_GetStringLength(query), &value_length, &flags, &error);
 	rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, value, value_length));
 	free(value);
 	return JS_TRUE;
@@ -2163,6 +2169,7 @@ static JSFunctionSpec apememcached_funcs[] = {
 	JS_FS("get", apememcached_sm_get, 2, 0),
 	JS_FS_END
 };
+
 static JSFunctionSpec apememcached_funcs_static[] = {
 	JS_FS_END
 };

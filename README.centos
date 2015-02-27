@@ -27,16 +27,16 @@ sudo make install
 cd ..
 
 #Upgrade bison
-wget ftp://ftp.gnu.org/gnu/bison/bison-2.5.1.tar.gz
-tar xvf bison-2.5.1.tar.gz
-cd bison-2.5.1
+wget ftp://ftp.gnu.org/gnu/bison/bison-2.7.tar.gz
+tar xvf bison-2.7.tar.gz
+cd bison-2.7
 ./configure --prefix=/usr
 make
 sudo make install
 cd ..
 
 #Install C++ Lib Dependencies
-sudo yum -y install libevent-devel zlib-devel ls-sdasdadasd
+sudo yum -y install libevent-devel zlib-devel ls-
 
 # Getting started
 cd /repos
