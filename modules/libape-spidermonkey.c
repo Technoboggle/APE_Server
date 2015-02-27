@@ -180,7 +180,7 @@ static void apemysql_shift_queue(struct _ape_mysql_data *myhandle);
 
 #ifdef _USE_MEMCACHE
 struct _ape_memcached_data {
-	memcached_st server;
+	memcached_st *server;
 	JSObject *jsmemcached;
 	JSContext *cx;
 };
@@ -1970,7 +1970,7 @@ APE_JS_NATIVE(ape_sm_memcached_constructor)
 	myhandle = xmalloc(sizeof(myhandle));
 	memcached_st *server = memcached_create(NULL);
 	memcached_server_add (server, host, port);
-	myhandle->server = *server;
+	myhandle->server = server;
 	myhandle->jsmemcached = obj;
 	myhandle->cx = cx;
 	JS_SetPrivate(cx, obj, myhandle);
@@ -1980,7 +1980,6 @@ APE_JS_NATIVE(ape_sm_memcached_constructor)
 APE_JS_NATIVE(apememcached_sm_get)
 //{
 	JSString *query;
-	jsval rval;
 	struct _ape_memcached_data *myhandle;
 	jsval callback;
 	JSObject *obj = JS_THIS_OBJECT(cx, vpn);
@@ -1994,8 +1993,8 @@ APE_JS_NATIVE(apememcached_sm_get)
 	size_t value_length;
 	uint32_t flags;
 	memcached_return_t error;
-	char value = memcached_get(&myhandle->server, JS_GetStringBytes(query), JS_GetStringLength(query), &value_length, &flags, &error);
-	rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, value, value_length));
+	char value = memcached_get(myhandle->server, JS_GetStringBytes(query), JS_GetStringLength(query), &value_length, &flags, &error);
+	jsval rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx, value, value_length));
 	free(value);
 	return JS_TRUE;
 }
